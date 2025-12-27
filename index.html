@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Simple Blog</title>
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <header class="site-header">
+    <div class="wrap">
+      <h1 class="site-title">Simple Blog</h1>
+      <p class="site-desc">A minimal static blog powered by Markdown and client-side JS</p>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <section id="list-view">
+      <h2>Posts</h2>
+      <ul id="posts-list" class="posts-list"></ul>
+    </section>
+
+    <section id="post-view" class="hidden">
+      <a id="back-link" href="#">← Back to posts</a>
+      <article id="post-content"></article>
+    </section>
+  </main>
+
+  <footer class="site-footer wrap">
+    <p>Made with ❤️ — add new posts in <code>/posts/</code></p>
+  </footer>
+
+  <!-- marked (Markdown parser) and DOMPurify for sanitizing -->
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/dompurify@2.4.0/dist/purify.min.js"></script>
+
+  <script>
+    const postsListEl = document.getElementById('posts-list');
+    const postView = document.getElementById('post-view');
+    const listView = document.getElementById('list-view');
+    const postContent = document.getElementById('post-content');
+    const backLink = document.getElementById('back-link');
+
+    async function loadPosts() {
+      try {
+        const res = await fetch('/posts/posts.json');
+        const posts = await res.json();
+        posts.sort((a,b) => new Date(b.date) - new Date(a.date));
+        posts.forEach(p => {
+          const li = document.createElement('li');
+          li.className = 'post-item';
+          li.innerHTML = `<a href="#${p.slug}"><h3>${p.title}</h3><p class="excerpt">${p.excerpt || ''}</p><time>${p.date}</time></a>`;
+          postsListEl.appendChild(li);
+        });
+
+        // Handle deep linking
+        if (location.hash) {
+          const slug = location.hash.slice(1);
+          openPost(slug);
+        }
+      } catch (err) {
+        postsListEl.innerHTML = '<li>Failed to load posts.</li>';
+        console.error(err);
+      }
+    }
+
+    async function openPost(slug) {
+      try {
+        const res = await fetch('/posts/posts.json');
+        const posts = await res.json();
+        const post = posts.find(p => p.slug === slug);
+        if (!post) {
+          alert('Post not found');
+          return;
+        }
+        const mdRes = await fetch('/posts/' + post.file);
+        const md = await mdRes.text();
+        const html = marked.parse(md);
+        postContent.innerHTML = '<h2>' + post.title + '</h2>' + '<p class="meta">' + post.date + '</p>' + DOMPurify.sanitize(html);
+        listView.classList.add('hidden');
+        postView.classList.remove('hidden');
+        location.hash = post.slug;
+      } catch (err) {
+        console.error(err);
+        alert('Failed to load post.');
+      }
+    }
+
+    window.addEventListener('hashchange', () => {
+      const slug = location.hash.slice(1);
+      if (slug) openPost(slug);
+      else showList();
+    });
+
+    backLink.addEventListener('click', (e) => {
+      e.preventDefault();
+      location.hash = '';
+      showList();
+    });
+
+    function showList() {
+      postView.classList.add('hidden');
+      listView.classList.remove('hidden');
+      postContent.innerHTML = '';
+    }
+
+    // initialize
+    loadPosts();
+  </script>
+</body>
+</html>

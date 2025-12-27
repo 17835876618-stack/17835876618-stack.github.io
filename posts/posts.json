@@ -1,0 +1,16 @@
+[
+  {
+    "title": "Hello, world!",
+    "date": "2025-12-27",
+    "slug": "hello-world",
+    "file": "hello-world.md",
+    "excerpt": "My first post — welcome to the simple blog."
+  },
+  {
+    "title": "Second post",
+    "date": "2025-12-27",
+    "slug": "second-post",
+    "file": "second-post.md",
+    "excerpt": "Another short example post."
+  }
+]
